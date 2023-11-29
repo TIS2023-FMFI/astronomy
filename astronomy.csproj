@@ -7,4 +7,13 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Reference Include="UsbWrapper">
+      <HintPath>..\..\..\..\..\pololu-usb-sdk-master\Maestro\Usc\bin\Debug\UsbWrapper.dll</HintPath>
+    </Reference>
+    <Reference Include="Usc">
+      <HintPath>..\..\..\..\..\pololu-usb-sdk-master\Maestro\Usc\bin\Debug\Usc.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
 </Project>
