@@ -6,20 +6,21 @@ namespace astronomy
     {
         public static void Perform()
         {
+            var albums = new List<List<string>>() {
+                new List<string> { "Reputation", "2017" },
+                new List<string> { "folklore", "2020"},
+                new List<string> { "Lover", "2019"},
+                new List<string> { "Midnights", "2022"},
+
+            };
             XDocument doc = new(
                 new XElement("outputs",
                     new XElement("output",
                         new XAttribute("name", "Taylor Swift"),
                         new XAttribute("born", "1989"),
                         new XElement("albums",
-                            new XElement("album",
-                                new XAttribute("name", "Reputation"),
-                                new XAttribute("year", "2017")
-                            ),
-                            new XElement("album",
-                                new XAttribute("name", "folklore"),
-                                new XAttribute("year", "2020")
-                            )
+                            from album in albums
+                            select new XElement("album", new XAttribute("name", album[0]), new XAttribute("year", album[1]))
                         )
                     )
                 )
