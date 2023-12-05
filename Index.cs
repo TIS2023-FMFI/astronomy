@@ -1,7 +1,4 @@
 ﻿using astronomy;
-using Pololu.UsbWrapper;
-using Pololu.Usc;
-using System.Text;
 
 namespace Astronomy
 {
@@ -13,16 +10,18 @@ namespace Astronomy
 
             while (true) {
                 Console.WriteLine("1) Control servo motors");
-                Console.WriteLine("2) Parse XML");
+                Console.WriteLine("2) Execute XML sequence");
+                Console.WriteLine("3) Create XML sequence");
                 Console.WriteLine("x) Exit");
                 Console.Write("Enter option: ");
-                userOption = Console.ReadLine().ToCharArray()[0];
+                string? raw = Console.ReadLine();
 
-                if (userOption == '1')
-                {
-                    ServoControl.Perform();
-                }
+                if (raw == "" || raw == null) continue;
+                userOption = raw.ToCharArray()[0];
+
+                if (userOption == '1') ServoControl.Perform();
                 if (userOption == '2') ParseXML.Perform();
+                if (userOption == '3') CreateSequence.Perform();
                 if (Char.ToLower(userOption) == 'x')
                 {
                     Exit.Perform();
