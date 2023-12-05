@@ -3,6 +3,7 @@ using System.Xml;
 
 namespace astronomy
 {
+
     class Configuration
     {
         public string name;
@@ -24,49 +25,82 @@ namespace astronomy
 
     internal class Xml
     {
-        public static void DoStuff()
+        private string? path {get; set;}
+        private List<Configuration>? openSequence;
+        private List<Configuration>? closeSequence;
+        public Xml()
+        {
+        }
+
+        public string SetPathInteractive(string defaultPath = "C:\\Users\\benko\\Downloads\\maestro_settings.txt")
         {
             Console.Write("XML configuration file path: ");
-            string? path = Console.ReadLine();
+            string path = Console.ReadLine();
             if (path == "" || path == null)
-            {
-                path = "C:\\Users\\benko\\Downloads\\maestro_settings.txt";
-            }
+                path = defaultPath;
 
+            return path;
+        }
 
+        private string GetAttributeValue(XmlNode node, string name) {
+            if (node.Attributes == null) return "";
+
+            foreach (XmlAttribute attr in node.Attributes)
+                if (attr.Name == name)
+                    return attr.Value;
+
+            return "";
+        }
+
+        public List<Configuration>? GetSequence(SequenceType? type = null)
+        {
+            if (path == null) return null;
+
+            List<Configuration> seq = new();
             XmlDocument doc = new();
             doc.Load(path);
 
-            List<Configuration> configs = new List<Configuration>();
+            uint duration = 0;
+            ushort[] positions = Array.Empty<ushort>();
+            string name = "";
 
-            XmlNode? sequencesNode = doc.GetElementsByTagName("Sequences")[0];
+            XmlNode? sequences = doc.GetElementsByTagName("Sequences")[0];
+            if (sequences == null) return null;
 
-            for (int i = 0; i < sequencesNode?.ChildNodes.Count; i++)
+            foreach (XmlNode sequence in sequences)
             {
-                XmlNode? sequence = sequencesNode.ChildNodes[i];
-                if (sequence == null) break;
+                if (sequence == null || sequence.Attributes == null) break;
 
-                foreach (XmlNode frame in sequence.ChildNodes)
+                string sequenceName = GetAttributeValue(sequence, "name");
+
+                if (type == SequenceType.OPEN && sequenceName.ToLower() != "open") continue;
+                if (type == SequenceType.CLOSE && sequenceName.ToLower() != "close") continue;
+
+                foreach (XmlNode frame in sequence)
                 {
-                    if (frame.Attributes == null) break;
+                    if (frame.Attributes  == null) continue;
 
-                    ushort[] positions = frame.InnerText.Split(" ").Select(item => ushort.Parse(item)).ToArray();
-                    string name = "";
-                    uint duration = 0;
-                    foreach (XmlAttribute attr in frame.Attributes)
-                    {
-                        if (attr.Name == "name") name = attr.Value;
-                        if (attr.Name == "duration") duration = Convert.ToUInt32(attr.Value);
-                    }
+                    name = GetAttributeValue(frame, "name");
+                    duration = Convert.ToUInt32(GetAttributeValue(frame, "duration"));
+                    positions = frame.InnerText.Split(" ").Select(ushort.Parse).ToArray();
 
-                    configs.Add(new Configuration(name, duration, positions));
+                    seq.Add(new Configuration(name, duration, positions));
                 }
             }
 
-            foreach (Configuration config in configs)
-            {
-                Console.WriteLine(config);
-            }
+            return seq;
+        }
+
+        public void DoStuff()
+        {
+            path = SetPathInteractive();
+            openSequence = GetSequence(SequenceType.OPEN);
+            closeSequence = GetSequence(SequenceType.CLOSE);
+            
+            if (openSequence == null) return;
+
+            openSequence.ForEach(Console.WriteLine);
+            closeSequence.ForEach(Console.WriteLine);
         }
     }
 }
