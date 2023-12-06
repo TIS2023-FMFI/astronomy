@@ -1,5 +1,3 @@
-# astronomy
+# CoverControl
 
-Telescope automated remote control
-
-Edit performed by Benjamin
+Telescope automated remote control in a CLI and GUI form
