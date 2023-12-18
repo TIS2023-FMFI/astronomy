@@ -66,15 +66,24 @@ namespace astronomy
 
         public static void Perform()
         {
-            Usc device = Connect();
-            byte servoNumber = FindServo();
-            ushort targetNumber = FindTarget(3968, 8000);
+            try
+            {
+                Usc device = Connect();
+                byte servoNumber = FindServo();
+                ushort targetNumber = FindTarget(3968, 8000);
 
-            device.setAcceleration(servoNumber, 100);
-            device.setSpeed(servoNumber, 0);
-            device.setTarget(servoNumber, targetNumber);
+                device.setAcceleration(servoNumber, 100);
+                device.setSpeed(servoNumber, 0);
+                device.setTarget(servoNumber, targetNumber);
 
-            device.Dispose();
+                device.Dispose();
+            } catch (InvalidOperationException ex)
+            {
+                Console.WriteLine($"It appears you have not plugged in the equipment ({ex.Message})\n");
+            } catch (Exception ex)
+            {
+                Console.WriteLine($"It appears that the equipment has been unplugged ({ex.Message})\n");
+            }
         }
     }
 }

@@ -12,7 +12,7 @@ namespace Astronomy
                 Console.WriteLine("1) Control servo motors");
                 Console.WriteLine("2) Execute XML sequence");
                 Console.WriteLine("3) Create XML sequence");
-                Console.WriteLine("4) Edit global settings");
+                Console.WriteLine("4) View global settings");
                 Console.WriteLine("x) Exit");
                 Console.Write("Enter option: ");
                 string? raw = Console.ReadLine();

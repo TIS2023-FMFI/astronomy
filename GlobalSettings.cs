@@ -11,7 +11,7 @@ namespace astronomy
         public static void Perform()
         {
             Console.WriteLine("\nGLOBAL SETTINGS FILE\n-------------------------------");
-            var env = new Env();
+            Env env = new();
             var keys = env.Settings.Keys;
             foreach ( var key in keys )
             {
