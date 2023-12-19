@@ -6,19 +6,6 @@ namespace astronomy
 {
     internal class ServoControl: IPerformable
     {
-        private static Usc Connect()
-        {
-            List<DeviceListItem> devices = Usc.getConnectedDevices();
-            if (devices.Count < 2)
-            {
-                return new Usc(devices.First());
-            }
-
-            Console.Write("Select device: ");
-            Console.ReadLine();
-            return new Usc(devices.First());
-        }
-
         private static byte FindServo()
         {
             char[] selection;
@@ -66,24 +53,16 @@ namespace astronomy
 
         public static void Perform()
         {
-            try
+            var servo = new Servo();
+            servo.Execute(device =>
             {
-                Usc device = Connect();
                 byte servoNumber = FindServo();
                 ushort targetNumber = FindTarget(3968, 8000);
 
                 device.setAcceleration(servoNumber, 100);
                 device.setSpeed(servoNumber, 0);
                 device.setTarget(servoNumber, targetNumber);
-
-                device.Dispose();
-            } catch (InvalidOperationException ex)
-            {
-                Console.WriteLine($"It appears you have not plugged in the equipment ({ex.Message})\n");
-            } catch (Exception ex)
-            {
-                Console.WriteLine($"It appears that the equipment has been unplugged ({ex.Message})\n");
-            }
+            });
         }
     }
 }

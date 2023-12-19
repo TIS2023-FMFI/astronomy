@@ -1,4 +1,5 @@
 ﻿using Microsoft.VisualBasic;
+using Pololu.Usc;
 using System.Xml;
 
 namespace astronomy
@@ -6,20 +7,26 @@ namespace astronomy
 
     class Configuration
     {
-        public string name;
-        public uint duration;
-        public ushort[] positions;
+        public string Name { get; set; }
+        public uint Duration { get; set; }
+        public ushort[] Positions { get; set; }
 
         public Configuration(string name, uint duration, ushort[] positions)
         {
-            this.name = name;
-            this.duration = duration;
-            this.positions = positions;
+            this.Name = name;
+            this.Duration = duration;
+            this.Positions = positions;
         }
 
         public override string ToString()
         {
-            return $"{name}: ({string.Join(", ", positions)}) ({duration}ms)";
+            return $"{Name}: ({string.Join(", ", Positions)}) ({Duration}ms)";
+        }
+
+        public void Deconstruct(out string name, out uint duration, out ushort[] positions) {
+            name = Name;
+            duration = Duration;
+            positions = Positions;
         }
     }
 
@@ -28,6 +35,8 @@ namespace astronomy
         private string? path {get; set;}
         private List<Configuration>? openSequence;
         private List<Configuration>? closeSequence;
+        private char openOption;
+        private char closeOption;
         public Xml()
         {
         }
@@ -39,7 +48,10 @@ namespace astronomy
             if (path == "" || path == null)
                 path = defaultPath;
 
-            return path;
+            string parsed = path.Replace("\"", "");
+            Console.WriteLine("Path: {0}", parsed);
+
+            return parsed;
         }
 
         private string GetAttributeValue(XmlNode node, string name) {
@@ -91,16 +103,82 @@ namespace astronomy
             return seq;
         }
 
+        public char menu(char openOption = 'a', char closeOption = 'b')
+        {
+            this.openOption = openOption;
+            this.closeOption = closeOption;
+
+            char userInput;
+            List<char> options = new();
+            do {
+                if (openSequence != null && openSequence.Count > 0)
+                {
+                    Console.WriteLine("{0}) Run open sequence", openOption);
+                    options.Add(openOption);
+                }
+
+                if (closeSequence != null && closeSequence.Count > 0)
+                {
+                    Console.WriteLine("{0}) Close sequence", closeOption);
+                    options.Add(closeOption);
+                }
+
+                Console.WriteLine("x) Go to Main Menu");
+
+                Console.Write("Select: ");
+
+                string rawInput = Console.ReadLine();
+                if (rawInput == null) return (char)0;
+
+                userInput = rawInput.ToLower().ToCharArray()[0];
+                if (userInput == 'x') break;
+            } while (options.Count > 0 && !options.Contains(userInput));
+
+            return userInput;
+            
+        }
+
+        public void RunFrames(List<Configuration> configurations, Usc device)
+        {
+            foreach (Configuration configuration in configurations)
+            {
+                var (_, duration, positions) = configuration;
+                Console.WriteLine("Running frame:");
+                Console.WriteLine(configuration.ToString());
+
+                for (byte i = 0; i < positions.Length; i++)
+                {
+                    device.setAcceleration(i, 100);
+                    device.setSpeed(i, 0);
+                    device.setTarget(i, positions[i]);
+                }
+
+                Thread.Sleep(checked((int)duration));
+            }
+        }
+
         public void DoStuff()
         {
             path = SetPathInteractive();
             openSequence = GetSequence(SequenceType.OPEN);
             closeSequence = GetSequence(SequenceType.CLOSE);
-            
-            if (openSequence == null) return;
 
-            openSequence.ForEach(Console.WriteLine);
-            closeSequence.ForEach(Console.WriteLine);
+            char userSelection;
+            while ((userSelection = menu()) != 'x') {
+                if (userSelection == openOption && openSequence != null)
+                {
+                    Servo servo = new();
+                    servo.Execute(device => RunFrames(openSequence, device));
+                }
+
+                if (userSelection == closeOption && closeSequence != null)
+                {
+                    Servo servo = new();
+                    servo.Execute(device => RunFrames(openSequence, device));
+                }
+            }
+
+            Console.WriteLine();
         }
     }
 }

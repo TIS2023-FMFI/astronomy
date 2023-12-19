@@ -20,6 +20,8 @@ namespace Astronomy
                 if (raw == "" || raw == null) continue;
                 userOption = raw.ToCharArray()[0];
 
+                Console.WriteLine();
+
                 if (userOption == '1') ServoControl.Perform();
                 if (userOption == '2') ParseXML.Perform();
                 if (userOption == '3') CreateXML.Perform();
