@@ -1,10 +1,5 @@
 ﻿using Pololu.UsbWrapper;
 using Pololu.Usc;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace astronomy
 {
@@ -13,7 +8,7 @@ namespace astronomy
         private List<DeviceListItem> _devices;
         public List<DeviceListItem> Devices { get { return _devices; } }
 
-        public DeviceListItem getActiveDevice()
+        public DeviceListItem GetActiveDevice()
         {
             return _devices.First();
         }

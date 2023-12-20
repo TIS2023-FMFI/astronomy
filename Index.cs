@@ -26,7 +26,7 @@ namespace Astronomy
                 if (userOption == '2') ParseXML.Perform();
                 if (userOption == '3') CreateXML.Perform();
                 if (userOption == '4') GlobalSettings.Perform();
-                if (Char.ToLower(userOption) == 'x')
+                if (char.ToLower(userOption) == 'x')
                 {
                     Exit.Perform();
                     break;

@@ -55,30 +55,21 @@ namespace astronomy
         {
             List<Frame> frames = new();
 
-            string frameNameInput, durationInput, framesInput, typeInput;
             while (true)
             {
                 Frame frame = new();
-                Console.WriteLine("(press Enter to finish adding frames)");
-                Console.Write("\nEnter frame name: ");
-                frameNameInput = Console.ReadLine();
-                if (frameNameInput == "") break;
+                Console.WriteLine("(press Enter to finish adding frames)\n");
 
-                frame.Name = frameNameInput;
+                frame.Name = Utils.GetInput("Enter frame name", input => true);
+                if (frame.Name == "") break;
 
-                Console.Write("Enter frame duration (ms): ");
-                durationInput = Console.ReadLine();
-                frame.Duration = Convert.ToUInt32(durationInput);
+                char sequenceType = Utils.GetInput("(O)pen or (C)lose sequence", input => input.ToLower().ToCharArray()[0] == 'o' || input.ToLower().ToCharArray()[0] == 'c', input => input.ToLower().ToCharArray()[0]);
+                if (sequenceType == 'c') frame.SequenceType = SequenceType.CLOSE;
+                else if (sequenceType == 'o') frame.SequenceType = SequenceType.OPEN;
 
-                Console.Write("Enter frame states (space-separated integers): ");
-                framesInput = Console.ReadLine();
-                frame.Positions = framesInput.Split(" ").Select(ushort.Parse).ToArray();
+                frame.Duration = Utils.GetInput("Frame duration (ms)", input => int.TryParse(input, out _), input => Convert.ToUInt32(input));
 
-                Console.Write("(O)pen or (C)lose sequence: ");
-                typeInput = Console.ReadLine();
-                string sequenceType = typeInput.ToCharArray()[0].ToString().ToLower();
-                if (sequenceType == "c") frame.SequenceType = SequenceType.CLOSE;
-                else if (sequenceType == "o") frame.SequenceType = SequenceType.OPEN;
+                frame.Positions = Utils.GetInput("Frame states (space-separated integers)", input => input.Split(' ').All(item => ushort.TryParse(item, out _)), input => input.Split(" ").Select(ushort.Parse).ToArray());
 
                 frames.Add(frame);
             };
@@ -88,16 +79,14 @@ namespace astronomy
 
         public static string EnterFileName()
         {
-            Console.Write("Enter file name (without suffix): ");
-            string fileInput = Console.ReadLine();
-            string fileName = fileInput;
-            if (fileInput == null || fileInput == "")
+            string fileName = Utils.GetInput("Enter file name (no suffix)", input => !new[] { '<', '>', ':', '"', '/', '\\', '|', '?', '*'}.Any(c => input.Contains(c)));
+            if (fileName == null || fileName == "")
             {
                 fileName = "file";
             }
 
             fileName.Replace(' ', '-');
-            return String.Format(@"{0}\{1}-{2}.txt", Environment.GetEnvironmentVariable("USERPROFILE"), fileName, DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss-ffff"));
+            return String.Format(@"{0}\{2}-{1}.txt", Environment.GetEnvironmentVariable("USERPROFILE"), fileName, DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss-ffff"));
         }
 
         public static void Perform()
@@ -106,10 +95,7 @@ namespace astronomy
             List<Frame> openFrames = new();
 
             List<Frame> frames = AskForFrames();
-            Console.WriteLine("Frame count: " + frames.Count);
             frames.ForEach(frame => {
-                Console.WriteLine(frame);
-
                 if (frame.SequenceType == SequenceType.CLOSE)
                     closeFrames.Add(frame);
                 
