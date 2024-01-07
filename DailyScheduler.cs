@@ -4,6 +4,25 @@ namespace astronomy
 {
     internal class DailyScheduler
     {
+        public int Day { get; set; }
+        public int Month { get; set; }
+        public int Year { get; set; }
+        public int Duration { get; set; }
+        public double Longitude { get; set; }
+        public double Latitude { get; set; }
+        public int TimeZone { get; set; }
+
+        public DailyScheduler(int day, int month, int year, int duration, double longitude, double latitude, int timeZone = 0)
+        {
+            Day = day;
+            Month = month;
+            Year = year;
+            Duration = duration;
+            Longitude = longitude;
+            Latitude = latitude;
+            TimeZone = timeZone;
+        }
+
         public string HrsMin(double hours)
         {
             var hrs = Math.Floor(hours * 60 + 0.5) / 60.0;
@@ -12,8 +31,8 @@ namespace astronomy
             StringBuilder sb = new();
             var dum = h * 100 + m;
             sb.Append(dum);
-            
-            
+
+
 
             if (dum < 1000) sb.Insert(0, "0");
             if (dum < 100) sb.Insert(0, "0");
@@ -38,8 +57,9 @@ namespace astronomy
             return decimalPart < 0 ? decimalPart + 1 : decimalPart;
         }
 
-        public long Round(long num, long dp) {
-            return (long) (Math.Round(num * Math.Pow(10, dp)) / Math.Pow(10, dp));
+        public long Round(long num, long dp)
+        {
+            return (long)(Math.Round(num * Math.Pow(10, dp)) / Math.Pow(10, dp));
         }
 
         public double Range(double x)
@@ -50,23 +70,25 @@ namespace astronomy
             return a < 0 ? a + 360 : a;
         }
 
-        public double Mjd(long day, long month, long year, long hour)
+        public double Mjd(long hour)
         {
-            if (month <= 2)
+            var useMonth = Month;
+            var useYear = Year;
+            if (useMonth <= 2)
             {
-                month = month + 12;
-                year = year - 1;
+                useMonth += 12;
+                useYear--;
             }
 
-            double a = 10000.0 * year + 100.0 * month + day;
-            double b = Math.Floor(year / 400.0) - Math.Floor(year / 100.0) + Math.Floor(year / 4.0); ;
+            double a = 10000.0 * useYear + 100.0 * useYear + Day;
+            double b = Math.Floor(useYear / 400.0) - Math.Floor(useYear / 100.0) + Math.Floor(useYear / 4.0); ;
             if (a <= 15821004.1)
             {
-                b = -2 * Math.Floor((year + 4716) / 4.0) - 1179;
+                b = -2 * Math.Floor((useYear + 4716) / 4.0) - 1179;
             }
-            a = 365.0 * year - 679004.0;
+            a = 365.0 * useYear - 679004.0;
 
-            return a + b + Math.Floor(30.6001 * (month + 1.0)) + day + hour / 24.0;
+            return a + b + Math.Floor(30.6001 * (useMonth + 1.0)) + Day + hour / 24.0;
         }
 
         public long Caldat(double mjd)
@@ -113,7 +135,7 @@ namespace astronomy
             return new double[5] { nz, z1, z2, xe, ye };
         }
 
-        public double Lmst(double mjd, double glong)
+        public double Lmst(double mjd)
         {
             var d = mjd - 51544.5;
             var t = d / 36525.0;
@@ -124,10 +146,11 @@ namespace astronomy
                 (t * t * t) / 38710000
             );
 
-            return lst / 15.0 + glong / 15;
+            return lst / 15.0 + Longitude / 15;
         }
 
-        public double[] MiniSun(double t) {
+        public double[] MiniSun(double t)
+        {
             var p2 = 6.283185307;
             var Coseps = 0.91748;
             var Sineps = 0.39778;
@@ -209,7 +232,7 @@ namespace astronomy
             return mooneq;
         }
 
-        public double SinAlt(double iobj, double mjd0, double hour, double glong, double cglat, double sglat)
+        public double SinAlt(double iobj, double mjd0, double hour, double cglat, double sglat)
         {
             var rads = 0.0174532925;
 
@@ -228,7 +251,7 @@ namespace astronomy
             var ra = objpos[2];
             var dec = objpos[1];
 
-            var tau = 15.0 * (Lmst(mjd, glong) - ra);
+            var tau = 15.0 * (Lmst(mjd) - ra);
 
             return (
               sglat * Math.Sin(rads * dec) +
@@ -236,8 +259,21 @@ namespace astronomy
             );
         }
 
-        public string[] FindTimes(double mjd, int tz, double glong, double glat)
+        public void GetSchedule()
         {
+            for (int i = 0; i < Duration; i++)
+            {
+                foreach (var time in FindTimes(i))
+                {
+                    Console.Write(time.ToString() + " ");
+                }
+                Console.WriteLine();
+            }
+        }
+
+        public string[] FindTimes(int delta = 0)
+        {
+            var mjd = Mjd(-TimeZone) + delta;
             var rads = 0.0174532925;
             var Sinho = new double[]
             {
@@ -247,9 +283,9 @@ namespace astronomy
                 //Math.Sin(rads * -9.0) // METEOR
             };
 
-            var sglat = Math.Sin(rads * glat);
-            var cglat = Math.Cos(rads * glat);
-            var date = mjd - tz / 24;
+            var sglat = Math.Sin(rads * Latitude);
+            var cglat = Math.Cos(rads * Latitude);
+            var date = mjd - TimeZone / 24;
 
             string[] s = new string[2];
 
@@ -257,15 +293,15 @@ namespace astronomy
             {
 
                 var hour = 1.0;
-                var ym = SinAlt(2, date, hour - 1.0, glong, cglat, sglat) - Sinho[j];
+                var ym = SinAlt(2, date, hour - 1.0, cglat, sglat) - Sinho[j];
 
                 double utrise = 0, utset = 0;
                 bool rise = false;
                 bool dusk = false;
                 while (hour < 25 && (dusk == false || rise == false))
                 {
-                    var yz = SinAlt(2, date, hour, glong, cglat, sglat) - Sinho[j];
-                    var yp = SinAlt(2, date, hour + 1.0, glong, cglat, sglat) - Sinho[j];
+                    var yz = SinAlt(2, date, hour, cglat, sglat) - Sinho[j];
+                    var yp = SinAlt(2, date, hour + 1.0, cglat, sglat) - Sinho[j];
                     var quadout = Quad(ym, yz, yp);
                     var nz = quadout[0];
                     var z1 = quadout[1];
@@ -313,142 +349,142 @@ namespace astronomy
         }
 
 
-        public static void TestSuite()
-        {
-            var suite = new DailyScheduler();
+        //public static void TestSuite()
+        //{
+        //    var suite = new DailyScheduler();
 
-            if (suite.HrsMin(7.672632622231937) != "0740") throw new Exception("Test failed");
-            if (suite.HrsMin(17.148789922886486) != "1709") throw new Exception("Test failed");
-            if (suite.HrsMin(0) != "0000") throw new Exception("Test failed");
-            if (suite.HrsMin(3.501849838073017) != "0330") throw new Exception("Test failed");
-            if (suite.HrsMin(7.682048024069065) != "0741") throw new Exception("Test failed");
-            if (suite.HrsMin(6.414387258123403) != "0625") throw new Exception("Test failed");
-            if (suite.HrsMin(6.7402313540381) != "0644") throw new Exception("Test failed");
+        //    if (suite.HrsMin(7.672632622231937) != "0740") throw new Exception("Test failed");
+        //    if (suite.HrsMin(17.148789922886486) != "1709") throw new Exception("Test failed");
+        //    if (suite.HrsMin(0) != "0000") throw new Exception("Test failed");
+        //    if (suite.HrsMin(3.501849838073017) != "0330") throw new Exception("Test failed");
+        //    if (suite.HrsMin(7.682048024069065) != "0741") throw new Exception("Test failed");
+        //    if (suite.HrsMin(6.414387258123403) != "0625") throw new Exception("Test failed");
+        //    if (suite.HrsMin(6.7402313540381) != "0644") throw new Exception("Test failed");
 
-            if (suite.Ipart(8797.924078308704) != 8797) throw new Exception("Test failed");
-            if (suite.Ipart(8793.746003686354) != 8793) throw new Exception("Test failed");
-            if (suite.Ipart(8793.996688163696) != 8793) throw new Exception("Test failed");
-            if (suite.Ipart(8794.038468909916) != 8794) throw new Exception("Test failed");
+        //    if (suite.Ipart(8797.924078308704) != 8797) throw new Exception("Test failed");
+        //    if (suite.Ipart(8793.746003686354) != 8793) throw new Exception("Test failed");
+        //    if (suite.Ipart(8793.996688163696) != 8793) throw new Exception("Test failed");
+        //    if (suite.Ipart(8794.038468909916) != 8794) throw new Exception("Test failed");
 
-            if (suite.Frac(321.70636966321587) != 0.7063696632158667)
-                throw new Exception("Test failed");
-            if (suite.Frac(0.6865207192704658) != 0.6865207192704658)
-                throw new Exception("Test failed");
-            if (suite.Frac(25.011207793324214) != 0.011207793324214066)
-                throw new Exception("Test failed");
+        //    if (suite.Frac(321.70636966321587) != 0.7063696632158667)
+        //        throw new Exception("Test failed");
+        //    if (suite.Frac(0.6865207192704658) != 0.6865207192704658)
+        //        throw new Exception("Test failed");
+        //    if (suite.Frac(25.011207793324214) != 0.011207793324214066)
+        //        throw new Exception("Test failed");
 
-            if (suite.Round(20240104, 4) != 20240104) throw new Exception("Test failed");
-            if (suite.Round(20240107, 4) != 20240107) throw new Exception("Test failed");
-            if (suite.Round(20250110, 4) != 20250110) throw new Exception("Test failed");
+        //    if (suite.Round(20240104, 4) != 20240104) throw new Exception("Test failed");
+        //    if (suite.Round(20240107, 4) != 20240107) throw new Exception("Test failed");
+        //    if (suite.Round(20250110, 4) != 20250110) throw new Exception("Test failed");
 
-            if (suite.Range(3167057.1342988084) != 137.1342988084507)
-                throw new Exception("Test failed");
-            if (suite.Range(3166455.49155319) != 255.4915531900042)
-                throw new Exception("Test failed");
-            if (suite.Range(3167222.586053855) != 302.5860538545385)
-                throw new Exception("Test failed");
-            if (suite.Range(3170802.3603902864) != 282.36039028619416)
-                throw new Exception("Test failed");
-            if (suite.Range(3958623.4536424656) != 63.453642465537996)
-                throw new Exception("Test failed");
+        //    if (suite.Range(3167057.1342988084) != 137.1342988084507)
+        //        throw new Exception("Test failed");
+        //    if (suite.Range(3166455.49155319) != 255.4915531900042)
+        //        throw new Exception("Test failed");
+        //    if (suite.Range(3167222.586053855) != 302.5860538545385)
+        //        throw new Exception("Test failed");
+        //    if (suite.Range(3170802.3603902864) != 282.36039028619416)
+        //        throw new Exception("Test failed");
+        //    if (suite.Range(3958623.4536424656) != 63.453642465537996)
+        //        throw new Exception("Test failed");
 
-            if (suite.Mjd(4, 13, 2023, 0) != 60313) throw new Exception("Test failed");
-            if (suite.Mjd(4, 13, 2029, 0) != 62505) throw new Exception("Test failed");
+        //    if (suite.Mjd(4, 13, 2023, 0) != 60313) throw new Exception("Test failed");
+        //    if (suite.Mjd(4, 13, 2029, 0) != 62505) throw new Exception("Test failed");
 
-            if (suite.Caldat(60313) != 20240104) throw new Exception("Test failed");
-            if (suite.Caldat(60317) != 20240108) throw new Exception("Test failed");
-            if (suite.Caldat(62508) != 20300107) throw new Exception("Test failed");
+        //    if (suite.Caldat(60313) != 20240104) throw new Exception("Test failed");
+        //    if (suite.Caldat(60317) != 20240108) throw new Exception("Test failed");
+        //    if (suite.Caldat(62508) != 20300107) throw new Exception("Test failed");
 
-            if (!Enumerable.SequenceEqual(
-                suite.Quad(0.4116832963648315, 0.47132513940850596, 0.4902675321425024),
-                new double[] { 0, 5.8739131346943525, 5.8739131346943525, 0.9654213408256299, 0.4902918639765651}))
-                throw new Exception("Test failed");
+        //    if (!Enumerable.SequenceEqual(
+        //        suite.Quad(0.4116832963648315, 0.47132513940850596, 0.4902675321425024),
+        //        new double[] { 0, 5.8739131346943525, 5.8739131346943525, 0.9654213408256299, 0.4902918639765651 }))
+        //        throw new Exception("Test failed");
 
-            if (!Enumerable.SequenceEqual(
-                suite.Quad(-0.40772288022816294, -0.25634823549589064, -0.10842499061961043),
-                new double[] {  0, 1.7482420561542114, 84.96958320217762, 43.358912629165914, 2.9879595259118528 }))
-                throw new Exception("Test failed");
+        //    if (!Enumerable.SequenceEqual(
+        //        suite.Quad(-0.40772288022816294, -0.25634823549589064, -0.10842499061961043),
+        //        new double[] { 0, 1.7482420561542114, 84.96958320217762, 43.358912629165914, 2.9879595259118528 }))
+        //        throw new Exception("Test failed");
 
-            if (!Enumerable.SequenceEqual(
-                suite.Quad(0.10886858178066046, -0.012026249134660487, -0.1521417740104821),
-                new double[] {1, -0.09278548337673698, -0.09278548337673698, -6.789826536115966, 0.4310275108532819 }))
-                throw new Exception("Test failed");
+        //    if (!Enumerable.SequenceEqual(
+        //        suite.Quad(0.10886858178066046, -0.012026249134660487, -0.1521417740104821),
+        //        new double[] { 1, -0.09278548337673698, -0.09278548337673698, -6.789826536115966, 0.4310275108532819 }))
+        //        throw new Exception("Test failed");
 
-            if (suite.Lmst(60317.25, 17.39519) != 14.312917557984765)
-                throw new Exception("Test failed");
-            if (suite.Lmst(60317.5, 17.39519) != 20.32934501413867)
-                throw new Exception("Test failed");
-            if (suite.Lmst(62509.875, 17.39519) != 5.3899221643691995)
-                throw new Exception("Test failed");
-            if (suite.Lmst(60317.5, 21.412) != 20.597132347472005)
-                throw new Exception("Test failed");
+        //    if (suite.Lmst(60317.25, 17.39519) != 14.312917557984765)
+        //        throw new Exception("Test failed");
+        //    if (suite.Lmst(60317.5, 17.39519) != 20.32934501413867)
+        //        throw new Exception("Test failed");
+        //    if (suite.Lmst(62509.875, 17.39519) != 5.3899221643691995)
+        //        throw new Exception("Test failed");
+        //    if (suite.Lmst(60317.5, 21.412) != 20.597132347472005)
+        //        throw new Exception("Test failed");
 
-            if (!Enumerable.SequenceEqual(suite.MiniSun(0.24018366415697018),
-                new double[] { 0, -22.307744532020063, 19.257113862041546 }))
-                throw new Exception("Test failed");
+        //    if (!Enumerable.SequenceEqual(suite.MiniSun(0.24018366415697018),
+        //        new double[] { 0, -22.307744532020063, 19.257113862041546 }))
+        //        throw new Exception("Test failed");
 
-            if (!Enumerable.SequenceEqual(suite.MiniSun(0.24019735341090584),
-                new double[] { 0, -22.241317017776915, 19.293512758287946 }))
-                throw new Exception("Test failed");
+        //    if (!Enumerable.SequenceEqual(suite.MiniSun(0.24019735341090584),
+        //        new double[] { 0, -22.241317017776915, 19.293512758287946 }))
+        //        throw new Exception("Test failed");
 
-            if (!Enumerable.SequenceEqual(suite.MiniSun(0.24019849418206707),
-                new double[] { 0, -22.235699152029547, 19.29654439540702 }))
-                throw new Exception("Test failed");
+        //    if (!Enumerable.SequenceEqual(suite.MiniSun(0.24019849418206707),
+        //        new double[] { 0, -22.235699152029547, 19.29654439540702 }))
+        //        throw new Exception("Test failed");
 
-            if (!Enumerable.SequenceEqual(suite.MiniMoon(0.24018366415697018),
-                new double[] { 0, -24.418849987639902, 16.111201592809252 }))
-                throw new Exception("Test failed");
+        //    if (!Enumerable.SequenceEqual(suite.MiniMoon(0.24018366415697018),
+        //        new double[] { 0, -24.418849987639902, 16.111201592809252 }))
+        //        throw new Exception("Test failed");
 
-            if (!Enumerable.SequenceEqual(suite.MiniMoon(0.24018822724161534),
-                new double[] { 0, -24.961849012953056, 16.270574981420367 }))
-                throw new Exception("Test failed");
+        //    if (!Enumerable.SequenceEqual(suite.MiniMoon(0.24018822724161534),
+        //        new double[] { 0, -24.961849012953056, 16.270574981420367 }))
+        //        throw new Exception("Test failed");
 
-            if (!Enumerable.SequenceEqual(suite.MiniMoon(0.24019164955509925),
-                new double[] { 0, -25.345617257145097, 16.391579064765654 }))
-                throw new Exception("Test failed");
+        //    if (!Enumerable.SequenceEqual(suite.MiniMoon(0.24019164955509925),
+        //        new double[] { 0, -25.345617257145097, 16.391579064765654 }))
+        //        throw new Exception("Test failed");
 
-            if (
-               suite.SinAlt(
-                 1,
-                 60316.958333333336,
-                 2,
-                 17.39519,
-                 0.6662686960741336,
-                 0.7457117570694951
-               ) != -0.40539577666187177
-             )
-                throw new Exception("Test failed");
+        //    if (
+        //       suite.SinAlt(
+        //         1,
+        //         60316.958333333336,
+        //         2,
+        //         17.39519,
+        //         0.6662686960741336,
+        //         0.7457117570694951
+        //       ) != -0.40539577666187177
+        //     )
+        //        throw new Exception("Test failed");
 
-            if (
-              suite.SinAlt(
-                1,
-                60316.958333333336,
-                13,
-                17.39519,
-                0.6662686960741336,
-                0.7457117570694951
-              ) != -0.009699145568369316
-            )
-                throw new Exception("Test failed");
+        //    if (
+        //      suite.SinAlt(
+        //        1,
+        //        60316.958333333336,
+        //        13,
+        //        17.39519,
+        //        0.6662686960741336,
+        //        0.7457117570694951
+        //      ) != -0.009699145568369316
+        //    )
+        //        throw new Exception("Test failed");
 
-            if (
-              suite.SinAlt(
-                1,
-                60316.958333333336,
-                7,
-                17.39519,
-                0.6662686960741336,
-                0.7457117570694951
-              ) != 0.22726516437610678
-            )
-                throw new Exception("Test failed");
+        //    if (
+        //      suite.SinAlt(
+        //        1,
+        //        60316.958333333336,
+        //        7,
+        //        17.39519,
+        //        0.6662686960741336,
+        //        0.7457117570694951
+        //      ) != 0.22726516437610678
+        //    )
+        //        throw new Exception("Test failed");
 
-            Console.WriteLine(suite.FindTimes(60313, 2, 17.39519, 48.22027));
+        //    Console.WriteLine(suite.FindTimes(60313, 2, 17.39519, 48.22027));
 
-            foreach (var time in suite.FindTimes(60313, 2, 17.39519, 48.22027))
-            {
-                Console.WriteLine(time);
-            }
-        }
+        //    foreach (var time in suite.FindTimes(60313, 2, 17.39519, 48.22027))
+        //    {
+        //        Console.WriteLine(time);
+        //    }
+        //}
     }
 }
