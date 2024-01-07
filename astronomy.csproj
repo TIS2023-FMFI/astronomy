@@ -5,6 +5,17 @@
     <TargetFramework>net7.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <Authors>Benjamin Bergstrom</Authors>
+    <StartupObject></StartupObject>
+    <Copyright>2023-2024</Copyright>
+    <PackageProjectUrl></PackageProjectUrl>
+    <Description>Telescope automated remote control in a CLI and GUI form</Description>
+    <RepositoryUrl>https://github.com/Benko11/astronomy</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <NeutralLanguage>en-GB</NeutralLanguage>
+    <Product>CoverControl</Product>
+    <Title>CoverControl</Title>
+    <Version>0.1.0</Version>
   </PropertyGroup>
 
   <ItemGroup>

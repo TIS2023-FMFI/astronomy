@@ -9,10 +9,12 @@ namespace Astronomy
             char userOption;
 
             while (true) {
+                Console.WriteLine("0) Relay controls (external application)");
                 Console.WriteLine("1) Control servo motors");
                 Console.WriteLine("2) Execute XML sequence");
                 Console.WriteLine("3) Create XML sequence");
-                Console.WriteLine("4) Edit global settings");
+                Console.WriteLine("4) Schedule");
+                Console.WriteLine("5) View global settings");
                 Console.WriteLine("x) Exit");
                 Console.Write("Enter option: ");
                 string? raw = Console.ReadLine();
@@ -20,11 +22,15 @@ namespace Astronomy
                 if (raw == "" || raw == null) continue;
                 userOption = raw.ToCharArray()[0];
 
+                Console.WriteLine();
+
+                if (userOption == '0') RelayControls.Perform();
                 if (userOption == '1') ServoControl.Perform();
                 if (userOption == '2') ParseXML.Perform();
                 if (userOption == '3') CreateXML.Perform();
-                if (userOption == '4') GlobalSettings.Perform();
-                if (Char.ToLower(userOption) == 'x')
+                if (userOption == '4') Schedule.Perform();
+                if (userOption == '5') GlobalSettings.Perform();
+                if (char.ToLower(userOption) == 'x')
                 {
                     Exit.Perform();
                     break;

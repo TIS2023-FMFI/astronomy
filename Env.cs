@@ -8,23 +8,42 @@ namespace astronomy
 {
     internal class Env
     {
-        private Dictionary<string, string> settings = new();
+        private static Dictionary<string, string> settings = new();
 
-        public Dictionary<string, string> Settings {
+        public static Dictionary<string, string> Settings {
             get { return settings; }
         }
 
-        public string GetValue(string key)
+        public static string GetValue(string key)
         {
-            return settings[key] ?? "";
+            try
+            {
+                return settings[key];
+            }
+            catch (KeyNotFoundException)
+            {
+                return "";
+            }
         }
 
-        public Env() {
+        public static void SetValue(string key, string value) {
+            if (GetValue(key) == "") {
+                using StreamWriter streamWriter = File.AppendText(@"C:\global.txt");
+                streamWriter.WriteLine(Environment.NewLine + $"{key}: {value}");
+            } else
+            {
+
+            }
+        }
+
+        static Env() {
             try {
-                using (var sr = new StreamReader(@"C:\global.txt")) {
+                using (StreamReader streamReader = new(@"C:\global.txt")) { 
                     string line;
-                    while ((line = sr.ReadLine()) != null)
+                    while ((line = streamReader.ReadLine()) != null)
                     {
+                        if (line == "") continue;
+
                         var parts = line.Split(": ");
                         settings.Add(parts[0], parts[1]);
                     }

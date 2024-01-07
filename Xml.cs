@@ -1,45 +1,32 @@
 ﻿using Microsoft.VisualBasic;
+using Pololu.Usc;
 using System.Xml;
 
 namespace astronomy
 {
-
-    class Configuration
-    {
-        public string name;
-        public uint duration;
-        public ushort[] positions;
-
-        public Configuration(string name, uint duration, ushort[] positions)
-        {
-            this.name = name;
-            this.duration = duration;
-            this.positions = positions;
-        }
-
-        public override string ToString()
-        {
-            return $"{name}: ({string.Join(", ", positions)}) ({duration}ms)";
-        }
-    }
-
     internal class Xml
     {
         private string? path {get; set;}
-        private List<Configuration>? openSequence;
-        private List<Configuration>? closeSequence;
+        private List<FrameConfiguration>? openSequence;
+        private List<FrameConfiguration>? closeSequence;
+        private char openOption;
+        private char closeOption;
         public Xml()
         {
         }
 
         public string SetPathInteractive(string defaultPath = "C:\\Users\\benko\\Downloads\\maestro_settings.txt")
         {
-            Console.Write("XML configuration file path: ");
-            string path = Console.ReadLine();
+            string path = Utils.GetInput("XML configuration file path", Utils.IsValidWindowsPath);
             if (path == "" || path == null)
                 path = defaultPath;
 
             return path;
+        }
+
+        public string GetChannels(XmlNode node)
+        {
+            return "murder";
         }
 
         private string GetAttributeValue(XmlNode node, string name) {
@@ -52,11 +39,11 @@ namespace astronomy
             return "";
         }
 
-        public List<Configuration>? GetSequence(SequenceType? type = null)
+        public List<FrameConfiguration>? GetSequence(SequenceType? type = null)
         {
             if (path == null) return null;
 
-            List<Configuration> seq = new();
+            List<FrameConfiguration> seq = new();
             XmlDocument doc = new();
             doc.Load(path);
 
@@ -84,11 +71,65 @@ namespace astronomy
                     duration = Convert.ToUInt32(GetAttributeValue(frame, "duration"));
                     positions = frame.InnerText.Split(" ").Select(ushort.Parse).ToArray();
 
-                    seq.Add(new Configuration(name, duration, positions));
+                    seq.Add(new FrameConfiguration(name, duration, positions));
                 }
             }
 
             return seq;
+        }
+
+        public char menu(char openOption = 'a', char closeOption = 'b')
+        {
+            this.openOption = openOption;
+            this.closeOption = closeOption;
+
+            char userInput;
+            List<char> options = new();
+            do {
+                if (openSequence != null && openSequence.Count > 0)
+                {
+                    Console.WriteLine("{0}) Run open sequence", openOption);
+                    options.Add(openOption);
+                }
+
+                if (closeSequence != null && closeSequence.Count > 0)
+                {
+                    Console.WriteLine("{0}) Close sequence", closeOption);
+                    options.Add(closeOption);
+                }
+
+                Console.WriteLine("x) Go to Main Menu");
+
+                Console.Write("Select: ");
+
+                string rawInput = Console.ReadLine();
+                if (rawInput == null) return (char)0;
+
+                userInput = rawInput.ToLower().ToCharArray()[0];
+                if (userInput == 'x') break;
+            } while (options.Count > 0 && !options.Contains(userInput));
+
+            return userInput;
+            
+        }
+
+        public void RunFrames(List<FrameConfiguration> configurations, Usc device)
+        {
+            foreach (FrameConfiguration configuration in configurations)
+            {
+                var (_, duration, positions) = configuration;
+                Console.WriteLine("Running frame:");
+                Console.WriteLine(configuration.ToString());
+
+                for (byte i = 0; i < positions.Length; i++)
+                {
+                    device.setAcceleration(i, 100);
+                    device.setSpeed(i, 0);
+                    device.setTarget(i, positions[i]);
+                }
+
+                Thread.Sleep(checked((int)duration));
+            }
         }
 
         public void DoStuff()
@@ -96,11 +137,25 @@ namespace astronomy
             path = SetPathInteractive();
             openSequence = GetSequence(SequenceType.OPEN);
             closeSequence = GetSequence(SequenceType.CLOSE);
-            
-            if (openSequence == null) return;
 
-            openSequence.ForEach(Console.WriteLine);
-            closeSequence.ForEach(Console.WriteLine);
+            //var c = GetChannels();
+
+            char userSelection;
+            while ((userSelection = menu()) != 'x') {
+                if (userSelection == openOption && openSequence != null)
+                {
+                    Servo servo = new();
+                    servo.Execute(device => RunFrames(openSequence, device));
+                }
+
+                if (userSelection == closeOption && closeSequence != null)
+                {
+                    Servo servo = new();
+                    servo.Execute(device => RunFrames(openSequence, device));
+                }
+            }
+
+            Console.WriteLine();
         }
     }
 }
