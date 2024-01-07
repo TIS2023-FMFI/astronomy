@@ -79,14 +79,14 @@ namespace astronomy
 
         public static string EnterFileName()
         {
-            string fileName = Utils.GetInput("Enter file name (no suffix)", input => !new[] { '<', '>', ':', '"', '/', '\\', '|', '?', '*'}.Any(c => input.Contains(c)));
+            string fileName = Utils.GetInput("Enter file name (no suffix)", Utils.IsValidWindowsPath);
             if (fileName == null || fileName == "")
             {
                 fileName = "file";
             }
 
-            fileName.Replace(' ', '-');
-            return String.Format(@"{0}\{2}-{1}.txt", Environment.GetEnvironmentVariable("USERPROFILE"), fileName, DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss-ffff"));
+            string file = fileName.Replace(' ', '-');
+            return String.Format(@"{0}\{2}-{1}.txt", Environment.GetEnvironmentVariable("USERPROFILE"), file, DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss-ffff"));
         }
 
         public static void Perform()
@@ -116,14 +116,14 @@ namespace astronomy
 
             XElement sequences = new("Sequences", closeSequence, openSequence);
             XDocument main = new(
-                new XElement("UscSettings", new XAttribute("version", (new Env()).GetValue("Usc_Settings")),
-                new XElement("NeverSuspend", new Env().GetValue("Never_Suspend")),
-                new XElement("SerialMode", new Env().GetValue("Serial_Mode")),
-                new XElement("FixedBaudRate", new Env().GetValue("Fixed_Baud_Rate")),
-                new XElement("SerialTimeout", new Env().GetValue("Serial_Timeout")),
-                new XElement("EnableCrc", new Env().GetValue("Enable_Crc")),
-                new XElement("SerialDeviceNumber", new Env().GetValue("Serial_Device_Number")),
-                new XElement("SerialMiniSscOffset", new Env().GetValue("Serial_Mini_Ssc_Offset")),
+                new XElement("UscSettings", new XAttribute("version", Env.GetValue("Usc_Settings")),
+                new XElement("NeverSuspend", Env.GetValue("Never_Suspend")),
+                new XElement("SerialMode", Env.GetValue("Serial_Mode")),
+                new XElement("FixedBaudRate", Env.GetValue("Fixed_Baud_Rate")),
+                new XElement("SerialTimeout", Env.GetValue("Serial_Timeout")),
+                new XElement("EnableCrc", Env.GetValue("Enable_Crc")),
+                new XElement("SerialDeviceNumber", Env.GetValue("Serial_Device_Number")),
+                new XElement("SerialMiniSscOffset", Env.GetValue("Serial_Mini_Ssc_Offset")),
                 new XElement("Script", new XAttribute("ScriptDone", false)),
             sequences));
 

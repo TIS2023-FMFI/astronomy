@@ -17,5 +17,10 @@
             if (processInput == null) return input;
             return processInput(input);
         }
+        
+        public static bool IsValidWindowsPath(string path)
+        {
+            return !new[] { '<', '>', ':', '"', '/', '\\', '|', '?', '*' }.Any(c => path.Contains(c));
+        }
     }
 }

@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Text;
 
 namespace astronomy
 {
@@ -10,12 +6,14 @@ namespace astronomy
     {
         public static void Perform()
         {
-            Console.WriteLine("\nGLOBAL SETTINGS FILE\n-------------------------------");
-            Env env = new();
-            var keys = env.Settings.Keys;
+            var header = new StringBuilder("\nGLOBAL SETTINGS FILE\n");
+            Enumerable.Range(0, Console.WindowWidth).ToList().ForEach(_ => header.Append('-'));
+            header.Append('\n');
+            Console.WriteLine(header.ToString());
+            var keys = Env.Settings.Keys;
             foreach ( var key in keys )
             {
-                Console.WriteLine($"{key}: {env.GetValue(key)}");
+                Console.WriteLine($"{key}: {Env.GetValue(key)}");
             }
             Console.WriteLine();
         }

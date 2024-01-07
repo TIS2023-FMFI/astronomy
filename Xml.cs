@@ -4,37 +4,11 @@ using System.Xml;
 
 namespace astronomy
 {
-
-    class Configuration
-    {
-        public string Name { get; set; }
-        public uint Duration { get; set; }
-        public ushort[] Positions { get; set; }
-
-        public Configuration(string name, uint duration, ushort[] positions)
-        {
-            this.Name = name;
-            this.Duration = duration;
-            this.Positions = positions;
-        }
-
-        public override string ToString()
-        {
-            return $"{Name}: ({string.Join(", ", Positions)}) ({Duration}ms)";
-        }
-
-        public void Deconstruct(out string name, out uint duration, out ushort[] positions) {
-            name = Name;
-            duration = Duration;
-            positions = Positions;
-        }
-    }
-
     internal class Xml
     {
         private string? path {get; set;}
-        private List<Configuration>? openSequence;
-        private List<Configuration>? closeSequence;
+        private List<FrameConfiguration>? openSequence;
+        private List<FrameConfiguration>? closeSequence;
         private char openOption;
         private char closeOption;
         public Xml()
@@ -43,15 +17,16 @@ namespace astronomy
 
         public string SetPathInteractive(string defaultPath = "C:\\Users\\benko\\Downloads\\maestro_settings.txt")
         {
-            Console.Write("XML configuration file path: ");
-            string path = Console.ReadLine();
+            string path = Utils.GetInput("XML configuration file path", Utils.IsValidWindowsPath);
             if (path == "" || path == null)
                 path = defaultPath;
 
-            string parsed = path.Replace("\"", "");
-            Console.WriteLine("Path: {0}", parsed);
+            return path;
+        }
 
-            return parsed;
+        public string GetChannels(XmlNode node)
+        {
+            return "murder";
         }
 
         private string GetAttributeValue(XmlNode node, string name) {
@@ -64,11 +39,11 @@ namespace astronomy
             return "";
         }
 
-        public List<Configuration>? GetSequence(SequenceType? type = null)
+        public List<FrameConfiguration>? GetSequence(SequenceType? type = null)
         {
             if (path == null) return null;
 
-            List<Configuration> seq = new();
+            List<FrameConfiguration> seq = new();
             XmlDocument doc = new();
             doc.Load(path);
 
@@ -96,7 +71,7 @@ namespace astronomy
                     duration = Convert.ToUInt32(GetAttributeValue(frame, "duration"));
                     positions = frame.InnerText.Split(" ").Select(ushort.Parse).ToArray();
 
-                    seq.Add(new Configuration(name, duration, positions));
+                    seq.Add(new FrameConfiguration(name, duration, positions));
                 }
             }
 
@@ -138,9 +113,9 @@ namespace astronomy
             
         }
 
-        public void RunFrames(List<Configuration> configurations, Usc device)
+        public void RunFrames(List<FrameConfiguration> configurations, Usc device)
         {
-            foreach (Configuration configuration in configurations)
+            foreach (FrameConfiguration configuration in configurations)
             {
                 var (_, duration, positions) = configuration;
                 Console.WriteLine("Running frame:");
@@ -162,6 +137,8 @@ namespace astronomy
             path = SetPathInteractive();
             openSequence = GetSequence(SequenceType.OPEN);
             closeSequence = GetSequence(SequenceType.CLOSE);
+
+            //var c = GetChannels();
 
             char userSelection;
             while ((userSelection = menu()) != 'x') {
